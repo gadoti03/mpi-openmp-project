@@ -13,7 +13,7 @@ def process_scaling(strong_csv, weak_csv):
             continue
             
         df = pd.read_csv(filename)
-        base_name = os.path.splitext(filename)[0]
+
         stats = df.groupby('P')['Time'].agg(['mean', 'std']).reset_index()
         
         t1 = stats[stats['P'] == 1]['mean'].iloc[0]
@@ -32,6 +32,13 @@ def process_scaling(strong_csv, weak_csv):
             (stats['std'] / stats['mean'])**2 + (s1 / t1)**2
         )
 
+        # crea cartella di output se non esiste
+        output_dir = "output"
+        os.makedirs(output_dir, exist_ok=True)
+
+        # prendi solo il nome base senza cartella ed estensione
+        base = os.path.splitext(os.path.basename(filename))[0]
+
         # Plot Tempo
         plt.figure(figsize=(10, 6))
         plt.errorbar(stats['P'], stats['mean'], yerr=stats['std'], fmt='-o', capsize=5, label='Tempo medio')
@@ -40,7 +47,7 @@ def process_scaling(strong_csv, weak_csv):
         plt.title(f'Scaling del Tempo: {title_suffix}')
         plt.grid(True, which="both", ls="-", alpha=0.5)
         plt.legend()
-        plt.savefig(f"{base_name}_time.png")
+        plt.savefig(os.path.join(output_dir, f"{base}_time.png"))
         plt.close()
 
         # Plot Speedup
@@ -52,7 +59,7 @@ def process_scaling(strong_csv, weak_csv):
         plt.title(f'Scaling dello Speedup: {title_suffix}')
         plt.grid(True, which="both", ls="-", alpha=0.5)
         plt.legend()
-        plt.savefig(f"{base_name}_speedup.png")
+        plt.savefig(os.path.join(output_dir, f"{base}_speedup.png"))
         plt.close()
 
 if __name__ == "__main__":
