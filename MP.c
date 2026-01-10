@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
-// #include <unistd.h>
 
 int main(int argc, char* argv[]) {
     if(argc != 2) {
@@ -20,23 +19,18 @@ int main(int argc, char* argv[]) {
 
     double * A; // matrice master
     int * T; // matrice risultato
-    double *recvbuf = NULL; // matrice locale da ricevere
-    int *sendbuf = NULL; // matrice locale da inviare
-    int my_rows; // righe locali
+
+    int base_rows = N / size; // righe per processo
+    int extra = N % size; // righe residue
 
     ///////////////////////////////////////////
     // calcolo sendcounts e displs per Scatterv
     ///////////////////////////////////////////
 
-    int base_rows = N / size; // righe per processo
-    int extra = N % size; // righe residue
+    int * sendcounts = malloc(size * sizeof(int));
+    int * displs_scatterv = malloc(size * sizeof(int));
+
     int base_offset = 0; // offset corrente
-
-    int *sendcounts = NULL; // elementi per Scatterv
-    int *displs_scatterv = NULL; // offset per Scatterv
-
-    sendcounts = malloc(size * sizeof(int));
-    displs_scatterv = malloc(size * sizeof(int));
 
     for(int i=0; i<size; i++){
         // assegno una riga extra ai primi 'extra' processi
@@ -54,9 +48,7 @@ int main(int argc, char* argv[]) {
     /////////////////////////////////////////// 
     ///////////////////////////////////////////
 
-    recvbuf = malloc(sendcounts[my_rank] * sizeof(double));
-
-    printf("[Sono il processo %d di %d]\n", my_rank, size);
+    double * recvbuf = malloc(sendcounts[my_rank] * sizeof(double));
 
     if (my_rank == 0) {
         // Alloca e inizializza matrice (in maniera continue)
@@ -116,7 +108,7 @@ int main(int argc, char* argv[]) {
     //////////////////////////////////////////
 
     // calcolo somma locale (senza halo)
-    sendbuf = malloc(recvcounts[my_rank] * sizeof(int));
+    int * sendbuf = malloc(recvcounts[my_rank] * sizeof(int));
 
     // setto righe iniziali e finali in base alla presenza di halo
     first_row = 1; // scarto la prima riga di halo
@@ -127,6 +119,7 @@ int main(int argc, char* argv[]) {
         last_row = sendcounts[my_rank]/N - 1; // ultima riga senza halo sotto
     }
 
+    // calcolo somma locale
     for (int i = first_row; i < last_row + 1; i++){ // per ogni riga locale valida
         for (int j = 0; j < N; j++){ // per ogni colonna
             double sum = 0.0;

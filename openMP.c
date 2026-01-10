@@ -40,16 +40,6 @@ int main(int argc, char* argv[]) {
 
     start = omp_get_wtime(); // campionamento del tempo di inizio
 
-    // test da fare:
-    // 1) schedule(static)
-    // 2) schedule(static, chunk_size)
-    // 3) schedule(dynamic, chunk_size)
-
-    // soluzione migliore:
-    // mettere padding e far arrivare la matrice ad avere N multiplo di P
-
-    // chunk_size = N / P; // dimensione del chunk
-
     #pragma omp parallel for num_threads(P) schedule(static)
     for(int i = 0; i < N; i++){
         for(int j = 0; j < N; j++){
@@ -74,16 +64,6 @@ int main(int argc, char* argv[]) {
 
     end = omp_get_wtime(); // campionamento del tempo di fine
 
-    /*
-    printf("[Master] Risultato T (matrice binaria):\n");
-    for(int i=0;i<N;i++) {
-        for(int j=0;j<N;j++) {
-            printf("%d ", T[i][j]);
-        }
-        printf("\n");
-    }
-    */
-
     printf("Tempo di esecuzione: %lf\n", end - start);
 
     // deallocazione memoria
@@ -96,6 +76,3 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 }
-
-
-// allcoazione dinamica -> matrici molto grandi vanno su heap, non su stack

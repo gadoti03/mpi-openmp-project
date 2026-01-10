@@ -1,0 +1,41 @@
+#!/bin/bash
+
+USERNAME=dchirich
+EMAIL=davide.chirichella@studio.unibo.it
+HOST="login.g100.cineca.it"
+PROVISIONER="cineca-hpc"
+STEP_COMMAND="step-cli" #the step tool that you are using
+
+echo "Starting Cineca HPC connection process..."
+
+# if you dont use bash as standard terminal
+TERM=xterm
+export TERM
+
+echo "1. Starting SSH agent..."
+eval "$(ssh-agent -s)"
+AGENT_PID=$!
+
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to start SSH agent."
+  exit 1
+fi
+
+echo "2. Executing '${STEP_COMMAND} ssh login' for OIDC authentication..."
+"${STEP_COMMAND}" ssh login "${EMAIL}" --provisioner "${PROVISIONER}"
+
+if [ $? -ne 0 ]; then
+  echo "ERROR: '${STEP_COMMAND} ssh login' failed. Ensure authentication completed in the browser."
+  kill "${AGENT_PID}" >/dev/null 2>&1
+  exit 1
+fi
+
+echo "3. Removing old host keys for ${HOST}..."
+ssh-keygen -R "${HOST}" 2>/dev/null
+
+echo "4. Attempting SSH connection to ${USERNAME}@${HOST} (sending TERM=xterm)..."
+ssh -o SendEnv=TERM "${USERNAME}@${HOST}"
+
+echo "Closing SSH agent..."
+ssh-agent -k >/dev/null 2>&1
+echo "SSH agent terminated."
