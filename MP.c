@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
+// #include <unistd.h>
 
 int main(int argc, char* argv[]) {
     if(argc != 2) {
@@ -11,8 +12,6 @@ int main(int argc, char* argv[]) {
 
     MPI_Init(&argc, &argv);
 
-    ////////////// mettere vincoli su rapporto fra N e P /////////////////////////////////////////
-
     int size, my_rank, N;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -21,13 +20,9 @@ int main(int argc, char* argv[]) {
 
     double * A; // matrice master
     int * T; // matrice risultato
-    double *my_A = NULL; // matrice locale
+    double *recvbuf = NULL; // matrice locale da ricevere
+    int *sendbuf = NULL; // matrice locale da inviare
     int my_rows; // righe locali
-
-    if (size > N) {
-        printf("il numero di processi %d è maggiore della dimensione %d\n", size, N);
-        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-    }
 
     ///////////////////////////////////////////
     // calcolo sendcounts e displs per Scatterv
@@ -38,10 +33,10 @@ int main(int argc, char* argv[]) {
     int base_offset = 0; // offset corrente
 
     int *sendcounts = NULL; // elementi per Scatterv
-    int *displs = NULL; // offset per Scatterv
+    int *displs_scatterv = NULL; // offset per Scatterv
 
     sendcounts = malloc(size * sizeof(int));
-    displs = malloc(size * sizeof(int));
+    displs_scatterv = malloc(size * sizeof(int));
 
     for(int i=0; i<size; i++){
         // assegno una riga extra ai primi 'extra' processi
@@ -51,11 +46,15 @@ int main(int argc, char* argv[]) {
         sendcounts[i] = ((i == 0 || i == size - 1) ? rows_i + 1 : rows_i + 2) * N;
         
         // offset delle righe da inviare - include le halo
-        displs[i] = ((i == 0) ? 0 : base_offset - N); 
+        displs_scatterv[i] = ((i == 0) ? 0 : base_offset - N); 
         base_offset += rows_i * N;
     }
 
-    my_A = malloc(sendcounts[my_rank] * sizeof(double));
+    ///////////////////////////////////////////
+    /////////////////////////////////////////// 
+    ///////////////////////////////////////////
+
+    recvbuf = malloc(sendcounts[my_rank] * sizeof(double));
 
     printf("[Sono il processo %d di %d]\n", my_rank, size);
 
@@ -76,9 +75,9 @@ int main(int argc, char* argv[]) {
         MPI_Scatterv(
             A, 
             sendcounts, 
-            displs, 
+            displs_scatterv, 
             MPI_DOUBLE, 
-            my_A, 
+            recvbuf, 
             sendcounts[my_rank], 
             MPI_DOUBLE, 
             0, 
@@ -87,50 +86,103 @@ int main(int argc, char* argv[]) {
     } else {
         MPI_Scatterv(
             NULL, 
-            sendcounts, 
-            displs, 
+            NULL, 
+            NULL, 
             MPI_DOUBLE, 
-            my_A, 
+            recvbuf, 
             sendcounts[my_rank], 
             MPI_DOUBLE, 
             0, 
             MPI_COMM_WORLD
         );
     }
+    
+    //////////////////////////////////////////
+    // calcolo recvcounts e displs per Gatherv
+    //////////////////////////////////////////
 
-    printf("[processo %d] ricevuto %d elementi:\n", my_rank, sendcounts[my_rank]);
-    for(int i = 0; i < sendcounts[my_rank]; i++){
-        printf("%.1f ", my_A[i]);
-        if ((i+1) % 5 == 0)  // ogni 5 elementi, vai a capo
-            printf("\n");
+    int first_row, last_row;
+    int *recvcounts = malloc(size * sizeof(int));
+    int *displs_gatherv = malloc(size * sizeof(int));
+
+    for(int i=0; i<size; i++){
+        int rows_i = base_rows + (i < extra ? 1 : 0);
+        recvcounts[i] = rows_i * N; // senza halo
+        displs_gatherv[i] = (i == 0) ? 0 : displs_gatherv[i-1] + recvcounts[i-1];
     }
-    if (sendcounts[my_rank] % 5 != 0)  // se l'ultimo gruppo < 5, vai a capo comunque
-        printf("\n");
-    fflush(stdout);
 
+    //////////////////////////////////////////
+    //////////////////////////////////////////
+    //////////////////////////////////////////
 
+    // calcolo somma locale (senza halo)
+    sendbuf = malloc(recvcounts[my_rank] * sizeof(int));
 
+    // setto righe iniziali e finali in base alla presenza di halo
+    first_row = 1; // scarto la prima riga di halo
+    last_row = sendcounts[my_rank]/N - 2; // scarto l'ultima riga di halo
+    if (my_rank == 0) {
+        first_row = 0; // prima riga senza halo sopra
+    } else if (my_rank == size - 1) {
+        last_row = sendcounts[my_rank]/N - 1; // ultima riga senza halo sotto
+    }
 
+    for (int i = first_row; i < last_row + 1; i++){ // per ogni riga locale valida
+        for (int j = 0; j < N; j++){ // per ogni colonna
+            double sum = 0.0;
+            int count = 0;
 
+            // loop sulle celle vicine
+            for (int di = -1; di <= 1; di++){
+                for (int dj = -1; dj <= 1; dj++){
+                    int ni = i + di;
+                    int nj = j + dj;
+                    if (ni >= 0 && ni < sendcounts[my_rank]/N && nj >= 0 && nj < N){
+                        sum += recvbuf[ni * N + nj];
+                        count++;
+                    }
+                }
+            }
 
+            sendbuf[(i - first_row) * N + j] = (recvbuf[i * N + j] * count > sum) ? 1 : 0; // ottimizzazione
+        }
+    }    
 
-
-
-
-
-
-
-
-
-
-
-    // Liberazione risorse
-    free(my_A);
-    free(sendcounts);
-    free(displs);
-    if(my_rank==0){
-        free(A);
-        free(T);
+    // invio risultati al master
+    if (my_rank == 0) {
+        MPI_Gatherv(
+            sendbuf, 
+            recvcounts[my_rank], 
+            MPI_INT, 
+            T, 
+            recvcounts, 
+            displs_gatherv, 
+            MPI_INT, 
+            0, 
+            MPI_COMM_WORLD
+        );
+    } else {
+        MPI_Gatherv(
+            sendbuf, 
+            recvcounts[my_rank], 
+            MPI_INT, 
+            NULL, 
+            NULL, 
+            NULL, 
+            MPI_INT, 
+            0, 
+            MPI_COMM_WORLD
+        );
+    }
+    
+    if (my_rank == 0) {
+        printf("\n[Master] Risultato T (matrice binaria):\n");
+        for(int i=0;i<N;i++) {
+            for(int j=0;j<N;j++) {
+                printf("%d ", T[i*N + j]);
+            }
+            printf("\n");
+        }
     }
 
     MPI_Finalize();
