@@ -41,3 +41,14 @@ python3 generate_graphs.py
 ```
 
 This will generate the graphs as defined in the script.
+
+## 3. Enjoy the results
+
+After running the script, run:
+
+```bash
+cd output
+```
+
+The graphs will appear.
+
