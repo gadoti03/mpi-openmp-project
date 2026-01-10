@@ -37,7 +37,7 @@ pip install -r requirements.txt
 After activating the virtual environment and installing the dependencies, run:
 
 ```bash
-python3 generate_graphs.py
+sbatch generate_graphs
 ```
 
 This will generate the graphs as defined in the script.
