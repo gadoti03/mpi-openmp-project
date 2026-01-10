@@ -1,54 +1,43 @@
-# Progetto Python: Generazione Grafici
+# Project Instructions
 
-Questo progetto permette di generare grafici utilizzando i dati disponibili.
-Qui trovi le istruzioni per creare l'ambiente virtuale, installare le dipendenze e avviare lo script `generate_graphs.py`.
+This guide explains how to set up the environment, install dependencies, and run the script to generate graphs.
 
----
+## 1. Create a virtual environment
 
-## 1️⃣ Creare un ambiente virtuale
+It's recommended to use a virtual environment to avoid conflicts with system packages.
 
 ```bash
-# Creazione dell'ambiente virtuale
 python3 -m venv venv
-
-# Attivazione dell'ambiente virtuale
-# Linux / macOS
-source venv/bin/activate
-
-# Windows (cmd)
-venv\Scripts\activate
-
-# Windows (PowerShell)
-venv\Scripts\Activate.ps1
 ```
 
-## 2️⃣ Installare le dipendenze
+Activate the virtual environment:
+
+* On Linux/macOS:
+
+```bash
+source venv/bin/activate
+```
+
+* On Windows (PowerShell):
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+## 2. Install dependencies
+
+Make sure you have a `requirements.txt` file in the project folder. Then install the required packages with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> Questo comando legge il file `requirements.txt` e installa tutte le librerie elencate, con le versioni specificate.
+## 3. Run the script
 
-## 3️⃣ Eseguire lo script principale
+After activating the virtual environment and installing the dependencies, run:
 
 ```bash
 python3 generate_graphs.py
 ```
 
-Lo script utilizzerà le librerie installate e produrrà i grafici nella cartella di output (di default).
-
-## 4️⃣ Suggerimenti
-
-* Assicurati di avere Python >= 3.10 installato.
-* Per disattivare l'ambiente virtuale in qualsiasi momento:
-
-```bash
-deactivate
-```
-
-* Se aggiungi nuove librerie, aggiorna `requirements.txt` con:
-
-```bash
-pip freeze > requirements.txt
-```
+This will generate the graphs as defined in the script.
