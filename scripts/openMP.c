@@ -9,68 +9,55 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    double start, end;
-    int N, P, chunk_size;
-    double ** A;
-    int ** T;
-
-    N = atoi(argv[1]);
-    P = atoi(argv[2]);
+    int N = atoi(argv[1]);
+    int P = atoi(argv[2]);
 
     if (P > N) {
-        printf("il numero di processi %d è maggiore della dimensione %d\n", P, N);
+        printf("Number of threads %d is greater than N=%d\n", P, N);
         return EXIT_FAILURE;
     }
 
-    // inizializzazione vettori
+    // Allocazione memoria continua
+    double *A = malloc(N * N * sizeof(double));
+    int *T = malloc(N * N * sizeof(int));
+    if(!A || !T) { perror("malloc"); return EXIT_FAILURE; }
+
+    // Inizializzazione matrice
     srand((unsigned int)time(NULL));
-
-    A = malloc(N * sizeof(double*));
-    T = malloc(N * sizeof(int*));
-
-    // inizializzazione vettori:
-    for(int i=0;i<N;i++) {
-        A[i] = malloc(N * sizeof(double));
-        T[i] = malloc(N * sizeof(int));
-        for(int j=0;j<N;j++) {
-            A[i][j] = ((double)rand() / RAND_MAX) * 100.0;
-            T[i][j] = 0; // inizializzo a zero
+    for(int i=0;i<N;i++)
+        for(int j=0;j<N;j++){
+            A[i*N + j] = ((double)rand() / RAND_MAX) * 100.0;
+            T[i*N + j] = 0;
         }
-    }
 
-    start = omp_get_wtime(); // campionamento del tempo di inizio
+    double start = omp_get_wtime();
 
-    #pragma omp parallel for num_threads(P) schedule(static)
-    for(int i = 0; i < N; i++){
-        for(int j = 0; j < N; j++){
+    #pragma omp parallel for schedule(static) num_threads(P)
+    for(int i=0;i<N;i++){
+        for(int j=0;j<N;j++){
             double sum = 0.0;
             int count = 0;
 
-            // loop sulle celle vicine
-            for(int di = -1; di <= 1; di++){
-                for(int dj = -1; dj <= 1; dj++){
+            // Loop sulle celle vicine
+            for(int di=-1;di<=1;di++){
+                for(int dj=-1;dj<=1;dj++){
                     int ni = i + di;
                     int nj = j + dj;
                     if(ni >= 0 && ni < N && nj >= 0 && nj < N){
-                        sum += A[ni][nj];
+                        sum += A[ni*N + nj];
                         count++;
                     }
                 }
             }
 
-            T[i][j] = (A[i][j] * count > sum) ? 1 : 0; // ottimizzazione
+            T[i*N + j] = (A[i*N + j] * count > sum) ? 1 : 0;
         }
     }
 
-    end = omp_get_wtime(); // campionamento del tempo di fine
-
+    double end = omp_get_wtime();
     printf("%lf\n", end - start);
 
-    // deallocazione memoria
-    for(int i=0;i<N;i++){
-        free(A[i]);
-        free(T[i]);
-    }
+    // Deallocazione
     free(A);
     free(T);
 
