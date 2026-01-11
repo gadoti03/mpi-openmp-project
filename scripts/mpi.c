@@ -50,6 +50,24 @@ int main(int argc, char* argv[]) {
     /////////////////////////////////////////// 
     ///////////////////////////////////////////
 
+    //////////////////////////////////////////
+    // calcolo recvcounts e displs per Gatherv
+    //////////////////////////////////////////
+
+    int first_row, last_row;
+    int *recvcounts = malloc(size * sizeof(int));
+    int *displs_gatherv = malloc(size * sizeof(int));
+
+    for(int i=0; i<size; i++){
+        int rows_i = base_rows + (i < extra ? 1 : 0);
+        recvcounts[i] = rows_i * N; // senza halo
+        displs_gatherv[i] = (i == 0) ? 0 : displs_gatherv[i-1] + recvcounts[i-1];
+    }
+
+    //////////////////////////////////////////
+    //////////////////////////////////////////
+    //////////////////////////////////////////
+
     double * recvbuf = malloc(sendcounts[my_rank] * sizeof(double));
 
     // Inizializzazione matrice
@@ -95,24 +113,6 @@ int main(int argc, char* argv[]) {
             MPI_COMM_WORLD
         );
     }
-    
-    //////////////////////////////////////////
-    // calcolo recvcounts e displs per Gatherv
-    //////////////////////////////////////////
-
-    int first_row, last_row;
-    int *recvcounts = malloc(size * sizeof(int));
-    int *displs_gatherv = malloc(size * sizeof(int));
-
-    for(int i=0; i<size; i++){
-        int rows_i = base_rows + (i < extra ? 1 : 0);
-        recvcounts[i] = rows_i * N; // senza halo
-        displs_gatherv[i] = (i == 0) ? 0 : displs_gatherv[i-1] + recvcounts[i-1];
-    }
-
-    //////////////////////////////////////////
-    //////////////////////////////////////////
-    //////////////////////////////////////////
 
     // calcolo somma locale (senza halo)
     int * sendbuf = malloc(recvcounts[my_rank] * sizeof(int));
