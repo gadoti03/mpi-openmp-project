@@ -20,7 +20,7 @@ OMP_STRONG_RES = $(RESULTS_DIR)/strong_openMP_results.csv
 OMP_WEAK_RES   = $(RESULTS_DIR)/weak_openMP_results.csv
 
 # =================== DEFAULT ===================
-all: build run plots
+all: build venv plot
 
 # =================== BUILD ===================
 build: $(MPI_BIN) $(OMP_BIN)
@@ -50,14 +50,20 @@ $(OMP_STRONG_RES):
 $(OMP_WEAK_RES):
 	sbatch $(OMP_WEAK_JOB)
 
-# =================== PLOTS ===================
-plots: plot_mpi plot_openmp
+# =================== PLOT ====================
+plot: plot_mpi plot_openmp
 
 plot_mpi: $(MPI_STRONG_RES) $(MPI_WEAK_RES)
 	python3 plot.py $(MPI_STRONG_RES) $(MPI_WEAK_RES)
 
 plot_openmp: $(OMP_STRONG_RES) $(OMP_WEAK_RES)
 	python3 plot.py $(OMP_STRONG_RES) $(OMP_WEAK_RES)
+
+# =================== PYTHON DEPENDENCY =======
+venv:
+	python3 -m venv venv
+	venv/bin/pip install --upgrade pip
+	venv/bin/pip install pandas matplotlib numpy
 
 # =================== CLEAN ===================
 clean:

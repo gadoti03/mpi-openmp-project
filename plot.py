@@ -64,7 +64,8 @@ def process_scaling(strong_csv, weak_csv):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Uso: python script.py strong_results.csv weak_results.csv")
+        print("Usage: python script.py results/strong_mpi_results.csv results/weak_mpi_results.csv")
+        print("Usage: python script.py results/strong_openMP_results.csv results/weak_openMP_results.csv")
         sys.exit(1)
     
     process_scaling(sys.argv[1], sys.argv[2])
