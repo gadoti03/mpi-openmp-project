@@ -10,7 +10,6 @@ int main(int argc, char* argv[]) {
     }
 
     double start, end;
-    start = MPI_Wtime();
 
     MPI_Init(&argc, &argv);
 
@@ -53,6 +52,7 @@ int main(int argc, char* argv[]) {
 
     double * recvbuf = malloc(sendcounts[my_rank] * sizeof(double));
 
+    // Inizializzazione matrice
     if (my_rank == 0) {
         // Alloca e inizializza matrice (in maniera continue)
         A = malloc(N * N * sizeof(double));
@@ -66,7 +66,11 @@ int main(int argc, char* argv[]) {
                 T[i*N + j] = 0;  // inizializzo a zero
             }
         }
+    }
 
+    start = MPI_Wtime();
+
+    if (my_rank == 0) {
         MPI_Scatterv(
             A, 
             sendcounts, 
@@ -156,6 +160,22 @@ int main(int argc, char* argv[]) {
         0, 
         MPI_COMM_WORLD
     );
+
+    MPI_Barrier(MPI_COMM_WORLD); 
+    end = MPI_Wtime();
+
+    /*
+    // stampa risultato 
+    if (my_rank == 0) {
+        printf("\n[Master] Risultato T (matrice binaria):\n");
+        for(int i=0;i<N;i++) {
+            for(int j=0;j<N;j++) {
+                printf("%d ", T[i*N + j]);
+            }
+            printf("\n");
+        }
+    }
+    */
 
     // deallocazione memoria
     free(recvbuf);

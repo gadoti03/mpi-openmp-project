@@ -2,6 +2,7 @@
 BIN_DIR     = bin
 SRC_DIR     = scripts
 RESULTS_DIR = results
+OUTPUT_DIR  = output
 
 MPI_SRC = $(SRC_DIR)/mpi.c
 OMP_SRC = $(SRC_DIR)/openMP.c
@@ -70,3 +71,7 @@ venv:
 # =================== CLEAN ===================
 clean:
 	rm -f $(MPI_BIN) $(OMP_BIN) $(RESULTS_DIR)/*.csv
+
+# =================== CLEANALL ===================
+cleanall:
+	rm -f $(MPI_BIN) $(OMP_BIN) $(RESULTS_DIR)/*.csv $(OUTPUT_DIR)/*.png
