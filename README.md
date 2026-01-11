@@ -86,7 +86,7 @@ This runs the Python plotting script on the generated CSV files.
 
 ## 6. Full pipeline
 
-To execute the full workflow (build + run + plots):
+To execute the full workflow (build + venv + run + plot):
 
 ```bash
 make
