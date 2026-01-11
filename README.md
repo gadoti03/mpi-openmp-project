@@ -1,15 +1,39 @@
-# Project Instructions
+# MPI & OpenMP Benchmark Project
 
-This project uses a Makefile to manage compilation, benchmark execution on SLURM,
-and generation of performance plots.
-
-The entire workflow is driven through `make`.
+This project provides a framework to **compile, run, and plot benchmarks** for MPI and OpenMP implementations. The workflow is fully managed through a `Makefile`, making it easy to reproduce results and generate plots from benchmark data.
 
 ---
 
-## 1. Create and activate a Python virtual environment (optional but recommended)
+## Table of Contents
 
-Using a virtual environment helps avoid conflicts with system Python packages.
+1. [Requirements](#requirements)
+2. [Setup](#setup)
+3. [Build](#build)
+4. [Run Benchmarks](#run-benchmarks)
+5. [Generate Plots](#generate-plots)
+6. [Full Pipeline](#full-pipeline)
+7. [Clean](#clean)
+8. [Project Structure](#project-structure)
+9. [Outputs](#outputs)
+
+---
+
+## Requirements
+
+* **C compiler**: `gcc` for OpenMP
+* **MPI compiler**: `mpicc` for MPI
+* **SLURM** for submitting benchmark jobs (`sbatch`)
+* **Python 3** with packages:
+
+  * `numpy`
+  * `pandas`
+  * `matplotlib`
+
+---
+
+## Setup
+
+### 1. Create a Python virtual environment (recommended)
 
 ```bash
 python3 -m venv venv
@@ -17,74 +41,69 @@ python3 -m venv venv
 
 Activate it:
 
-- On Linux/macOS:
+* On Linux/macOS:
+
 ```bash
 source venv/bin/activate
 ```
 
-- On Windows (PowerShell):
+* On Windows (PowerShell):
+
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
----
-
-## 2. Install Python dependencies
-
-Ensure that a `requirements.txt` file is present, then run:
+### 2. Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-This step is required for generating plots.
+This is required for generating plots.
 
 ---
 
-## 3. Build the executables
+## Build
 
-Compile both MPI and OpenMP versions:
+Compile the MPI and OpenMP executables:
 
 ```bash
 make build
 ```
 
 This generates:
-- `bin/binarize_mpi`
-- `bin/binarize_openMP`
+
+* `bin/binarize_mpi`
+* `bin/binarize_openMP`
 
 ---
 
-## 4. Run benchmarks on SLURM
+## Run Benchmarks
 
-Submit all strong and weak scaling benchmarks (MPI + OpenMP):
+Submit strong and weak scaling benchmarks for both MPI and OpenMP using SLURM:
 
 ```bash
 make run
 ```
 
-This submits SLURM jobs using `sbatch`.
-Each benchmark script is expected to generate a `.csv` file inside the `results/` directory.
-
-> ⚠️ Note:
-> SLURM jobs are submitted asynchronously.
-> The Makefile assumes benchmark scripts correctly generate the expected output files.
+* The Makefile submits jobs asynchronously.
+* Each job script generates a `.csv` file in `results/`.
 
 ---
 
-## 5. Generate plots
+## Generate Plots
 
-After benchmark results are available, generate plots with:
+After benchmark results are available, generate plots:
 
 ```bash
 make plots
 ```
 
-This runs the Python plotting script on the generated CSV files.
+This runs `plot.py` on the CSV results for both MPI and OpenMP.
 
 ---
 
-## 6. Full pipeline
+## Full Pipeline
 
 To execute the full workflow (build + venv + run + plot):
 
@@ -94,7 +113,7 @@ make
 
 ---
 
-## 7. Clean generated files
+## Clean
 
 Remove binaries and benchmark results:
 
@@ -104,9 +123,26 @@ make clean
 
 ---
 
-## 8. Output
+## Project Structure
 
-- Benchmark results: `results/*.csv`
-- Generated plots: `output/` (created by the plotting script)
+```
+bin/                # Compiled binaries
+scripts/            # Source code for MPI/OpenMP
+results/            # Benchmark CSV output
+output/             # Generated plots
+plot.py             # Python script for generating plots
+Makefile            # Workflow automation
+requirements.txt    # Python dependencies
+README.md           # Project documentation
+```
 
-Enjoy the results.
+---
+
+## Outputs
+
+* **Benchmark results**: `results/*.csv`
+* **Generated plots**: `output/` (created by the plotting script)
+
+---
+
+Enjoy benchmarking and analyzing performance!
