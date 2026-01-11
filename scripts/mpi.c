@@ -157,19 +157,6 @@ int main(int argc, char* argv[]) {
         MPI_COMM_WORLD
     );
 
-    /*
-    // stampa risultato 
-    if (my_rank == 0) {
-        printf("\n[Master] Risultato T (matrice binaria):\n");
-        for(int i=0;i<N;i++) {
-            for(int j=0;j<N;j++) {
-                printf("%d ", T[i*N + j]);
-            }
-            printf("\n");
-        }
-    }
-    */
-
     // deallocazione memoria
     free(recvbuf);
     free(sendbuf);

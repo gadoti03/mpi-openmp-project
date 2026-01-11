@@ -26,9 +26,11 @@ all: build venv plot
 build: $(MPI_BIN) $(OMP_BIN)
 
 $(MPI_BIN): $(MPI_SRC)
+  mkdir -p $(BIN_DIR)
 	mpicc -o $@ $<
 
 $(OMP_BIN): $(OMP_SRC)
+  mkdir -p $(BIN_DIR)
 	gcc -fopenmp -o $@ $<
 
 # =================== RUN ===================
