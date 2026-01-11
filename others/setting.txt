@@ -1,6 +1,0 @@
-# COMPILA mpi
-mpicc -o ../bin/binarize_mpi mpi.c
-
-# COMPILA openMP
-gcc -fopenmp -o ../bin/binarize_openMP openMP.c
-
