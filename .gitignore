@@ -1,2 +1,4 @@
 hpc-project/
 venv/
+__pycache__/
+*.pyc
