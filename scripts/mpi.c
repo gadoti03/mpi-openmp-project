@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
     }
 
     double start, end;
+    double local_time, global_time;
 
     MPI_Init(&argc, &argv);
 
@@ -19,60 +20,76 @@ int main(int argc, char* argv[]) {
 
     N = atoi(argv[1]);
 
-    double * A; // matrice master
-    int * T; // matrice risultato
+    double * A; // Master matrix
+    int * T; // Result matrix
 
-    int base_rows = N / size; // righe per processo
-    int extra = N % size; // righe residue
+    int base_rows = N / size; // rows per process
+    int extra = N % size; // extra rows
 
-    ///////////////////////////////////////////
-    // calcolo sendcounts e displs per Scatterv
-    ///////////////////////////////////////////
+    /////////////////////////////////////////////
+    // Compute sendcounts and displs for Scatterv
+    /////////////////////////////////////////////
 
-    int * sendcounts = malloc(size * sizeof(int));
-    int * displs_scatterv = malloc(size * sizeof(int));
+    int *sendcounts;
+    int *displs_scatterv;
 
-    int base_offset = 0; // offset corrente
+    if (my_rank == 0) {
+        sendcounts = malloc(size * sizeof(int));
+        displs_scatterv = malloc(size * sizeof(int));
 
-    for(int i=0; i<size; i++){
-        // assegno una riga extra ai primi 'extra' processi
-        int rows_i = base_rows + (i < extra ? 1 : 0);
-        
-        // numero di righe da inviare - include le halo
-        sendcounts[i] = ((i == 0 || i == size - 1) ? rows_i + 1 : rows_i + 2) * N;
-        
-        // offset delle righe da inviare - include le halo
-        displs_scatterv[i] = ((i == 0) ? 0 : base_offset - N); 
-        base_offset += rows_i * N;
-    }
+        int base_offset = 0; // Actual offset in elements
+
+        for(int i=0; i<size; i++){
+            // Assign an extra row to the first 'extra' processes
+            int rows_i = base_rows + (i < extra ? 1 : 0);
+            
+            // Number of elements to send - including halos
+            sendcounts[i] = ((i == 0 || i == size - 1) ? rows_i + 1 : rows_i + 2) * N;
+            
+            // Offset of rows to send - including halos
+            displs_scatterv[i] = ((i == 0) ? 0 : base_offset - N); 
+            base_offset += rows_i * N;
+        }
+    } 
+
+    int my_sendcount = ((my_rank == 0 || my_rank == size - 1) ? base_rows + (my_rank < extra ? 1 : 0) + 1 : base_rows + (my_rank < extra ? 1 : 0) + 2) * N; // Number of elements to receive - including halos
 
     ///////////////////////////////////////////
     /////////////////////////////////////////// 
     ///////////////////////////////////////////
 
-    //////////////////////////////////////////
-    // calcolo recvcounts e displs per Gatherv
-    //////////////////////////////////////////
+    double * recvbuf = malloc(my_sendcount * sizeof(double));
+
+    ////////////////////////////////////////////
+    // Compute recvcounts and displs for Gatherv
+    ////////////////////////////////////////////
 
     int first_row, last_row;
-    int *recvcounts = malloc(size * sizeof(int));
-    int *displs_gatherv = malloc(size * sizeof(int));
+    int *recvcounts;
+    int *displs_gatherv;
 
-    for(int i=0; i<size; i++){
-        int rows_i = base_rows + (i < extra ? 1 : 0);
-        recvcounts[i] = rows_i * N; // senza halo
-        displs_gatherv[i] = (i == 0) ? 0 : displs_gatherv[i-1] + recvcounts[i-1];
+    if (my_rank == 0) {
+        recvcounts = malloc(size * sizeof(int));
+        displs_gatherv = malloc(size * sizeof(int));
+
+        for(int i=0; i<size; i++){
+            int rows_i = base_rows + (i < extra ? 1 : 0);
+            recvcounts[i] = rows_i * N; // senza halo
+            displs_gatherv[i] = (i == 0) ? 0 : displs_gatherv[i-1] + recvcounts[i-1];
+        }
     }
 
+    int my_recvcount = base_rows * N + (my_rank < extra ? N : 0); // numero di righe da inviare - senza halo
+
     //////////////////////////////////////////
     //////////////////////////////////////////
     //////////////////////////////////////////
 
-    double * recvbuf = malloc(sendcounts[my_rank] * sizeof(double));
+    int * sendbuf = malloc(my_recvcount * sizeof(int));
 
-    // Inizializzazione matrice
+    // Matrix initialization
     if (my_rank == 0) {
-        // Alloca e inizializza matrice (in maniera continue)
+        // Allocate memory for A and T (contiguous allocation)
         A = malloc(N * N * sizeof(double));
         T = malloc(N * N * sizeof(int));
 
@@ -81,11 +98,12 @@ int main(int argc, char* argv[]) {
         for(int i = 0; i < N; i++){
             for(int j = 0; j < N; j++){
                 A[i*N + j] = ((double)rand() / RAND_MAX) * 100.0;
-                T[i*N + j] = 0;  // inizializzo a zero
+                T[i*N + j] = 0;  // initialize T to zero
             }
         }
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
     start = MPI_Wtime();
 
     if (my_rank == 0) {
@@ -95,7 +113,7 @@ int main(int argc, char* argv[]) {
             displs_scatterv, 
             MPI_DOUBLE, 
             recvbuf, 
-            sendcounts[my_rank], 
+            sendcounts[0], 
             MPI_DOUBLE, 
             0, 
             MPI_COMM_WORLD
@@ -107,37 +125,34 @@ int main(int argc, char* argv[]) {
             NULL, 
             MPI_DOUBLE, 
             recvbuf, 
-            sendcounts[my_rank], 
+            my_sendcount, 
             MPI_DOUBLE, 
             0, 
             MPI_COMM_WORLD
         );
     }
 
-    // calcolo somma locale (senza halo)
-    int * sendbuf = malloc(recvcounts[my_rank] * sizeof(int));
-
-    // setto righe iniziali e finali in base alla presenza di halo
-    first_row = 1; // scarto la prima riga di halo
-    last_row = sendcounts[my_rank]/N - 2; // scarto l'ultima riga di halo
+    // Set first_row and last_row for local computation
+    first_row = 1; // Discard upper halo
+    last_row = my_sendcount/N - 2; // Discard last row of halo
     if (my_rank == 0) {
-        first_row = 0; // prima riga senza halo sopra
+        first_row = 0; // First row without upper halo
     } else if (my_rank == size - 1) {
-        last_row = sendcounts[my_rank]/N - 1; // ultima riga senza halo sotto
+        last_row = my_sendcount/N - 1; // Last row without lower halo
     }
 
-    // calcolo somma locale
-    for (int i = first_row; i < last_row + 1; i++){ // per ogni riga locale valida
-        for (int j = 0; j < N; j++){ // per ogni colonna
+    // Computer local sum
+    for (int i = first_row; i < last_row + 1; i++){ // for each row
+        for (int j = 0; j < N; j++){ // for each column
             double sum = 0.0;
             int count = 0;
 
-            // loop sulle celle vicine
+            // Loop over the 3x3 neighborhood
             for (int di = -1; di <= 1; di++){
                 for (int dj = -1; dj <= 1; dj++){
                     int ni = i + di;
                     int nj = j + dj;
-                    if (ni >= 0 && ni < sendcounts[my_rank]/N && nj >= 0 && nj < N){
+                    if (ni >= 0 && ni < my_sendcount/N && nj >= 0 && nj < N){
                         sum += recvbuf[ni * N + nj];
                         count++;
                     }
@@ -148,54 +163,65 @@ int main(int argc, char* argv[]) {
         }
     }    
 
-    // raccolta risultati
-    MPI_Gatherv(
-        sendbuf, 
-        recvcounts[my_rank], 
-        MPI_INT, 
-        T, 
-        recvcounts, 
-        displs_gatherv, 
-        MPI_INT, 
+    // Gather results
+    if (my_rank == 0) {
+        MPI_Gatherv(
+            sendbuf, 
+            recvcounts[0], 
+            MPI_INT, 
+            T, 
+            recvcounts,
+            displs_gatherv,
+            MPI_INT, 
+            0, 
+            MPI_COMM_WORLD
+        );
+    } else {    
+        MPI_Gatherv(
+            sendbuf, 
+            my_recvcount, 
+            MPI_INT, 
+            NULL, 
+            NULL, 
+            NULL, 
+            MPI_INT, 
+            0, 
+            MPI_COMM_WORLD
+        );
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD); 
+    end = MPI_Wtime();
+    local_time = end - start;
+
+    MPI_Reduce(
+        &local_time, 
+        &global_time, 
+        1, 
+        MPI_DOUBLE, 
+        MPI_MAX, 
         0, 
         MPI_COMM_WORLD
     );
 
-    MPI_Barrier(MPI_COMM_WORLD); 
-    end = MPI_Wtime();
-
-    /*
-    // stampa risultato 
+    // Cleanup
     if (my_rank == 0) {
-        printf("\n[Master] Risultato T (matrice binaria):\n");
-        for(int i=0;i<N;i++) {
-            for(int j=0;j<N;j++) {
-                printf("%d ", T[i*N + j]);
-            }
-            printf("\n");
-        }
-    }
-    */
+        free(sendcounts);
+        free(recvcounts);
+        free(displs_scatterv);
+        free(displs_gatherv);
 
-    // deallocazione memoria
-    free(recvbuf);
-    free(sendbuf);
-    free(sendcounts);
-    free(recvcounts);
-    free(displs_scatterv);
-    free(displs_gatherv);
-
-    if (my_rank == 0) {
         free(A);
         free(T);
     }
 
+    free(recvbuf);
+    free(sendbuf);
+
     MPI_Finalize();
-
-    end = MPI_Wtime();
-
+    
     if (my_rank == 0) {
-        printf("%lf\n", end - start);
+        printf("%lf\n", global_time);
     }
 
     return EXIT_SUCCESS;

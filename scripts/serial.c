@@ -1,23 +1,18 @@
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 int main(int argc, char* argv[]) {
-    if(argc < 3) {
-        printf("Usage: %s N P\n", argv[0]);
+    if(argc < 2) {
+        printf("Usage: %s N\n", argv[0]);
         return 1;
     }
 
     int N = atoi(argv[1]);
-    int P = atoi(argv[2]);
 
-    if (P > N) {
-        printf("Number of threads %d is greater than N=%d\n", P, N);
-        return EXIT_FAILURE;
-    }
+    clock_t start, end;
 
-    // Matrices allocation
+    // Continous memory allocation
     double *A = malloc(N * N * sizeof(double));
     int *T = malloc(N * N * sizeof(int));
     if(!A || !T) { perror("malloc"); return EXIT_FAILURE; }
@@ -30,15 +25,14 @@ int main(int argc, char* argv[]) {
             T[i*N + j] = 0;
         }
 
-    double start = omp_get_wtime();
+    start = clock();
 
-    #pragma omp parallel for schedule(static) num_threads(P)
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             double sum = 0.0;
             int count = 0;
 
-            // Loop over neighbors
+            // Loop over neighboring cells
             for(int di=-1;di<=1;di++){
                 for(int dj=-1;dj<=1;dj++){
                     int ni = i + di;
@@ -54,10 +48,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    double end = omp_get_wtime();
-    printf("%lf\n", end - start);
+    end = clock();
 
-    // Free allocated memory
+    printf("%ld\n", end - start);
+
+    // Deallocation
     free(A);
     free(T);
 
