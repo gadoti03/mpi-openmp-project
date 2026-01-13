@@ -2,7 +2,7 @@
 #SBATCH --account=tra25_IngInfBo
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH --ntasks=48
 #SBATCH -o job.out
 #SBATCH -e job.err

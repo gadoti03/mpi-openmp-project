@@ -34,19 +34,24 @@ OMP_WEAK_RES   = $(RESULTS_DIR)/weak_openMP_results.csv
 all: build venv plot
 
 # =================== BUILD ===================
-build: $(MPI_BIN) $(MPI_SR_BIN) $(OMP_BIN)
+build: modules $(MPI_BIN) $(MPI_SR_BIN) $(OMP_BIN)
+
+.PHONY: modules
+modules:
+	module purge
+	module load openmpi/4.1.6--gcc--12.2.0
 
 $(MPI_SR_BIN): $(MPI_SR_SRC)
 	mkdir -p $(BIN_DIR)
-	mpicc -o $@ $<
+	mpicc -O3 -o $@ $<
 
 $(MPI_BIN): $(MPI_SRC)
 	mkdir -p $(BIN_DIR)
-	mpicc -o $@ $<
+	mpicc -O3 -o $@ $<
 
 $(OMP_BIN): $(OMP_SRC)
 	mkdir -p $(BIN_DIR)
-	gcc -fopenmp -o $@ $<
+	gcc -fopenmp -O3 -o $@ $<
 
 # =================== RUN ===================
 run: mpi mpi_sr openmp
