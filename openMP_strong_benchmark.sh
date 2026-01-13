@@ -9,7 +9,7 @@
 #SBATCH -e job.err
 
 EXEC="./bin/binarize_openMP"
-N_FIXED=10000
+N_FIXED=50
 RESULTS_DIR="results"
 
 mkdir -p $RESULTS_DIR

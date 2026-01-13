@@ -9,7 +9,7 @@
 #SBATCH -e job.err
 
 EXEC="./bin/binarize_mpi"
-N_FIXED=10000
+N_FIXED=5000
 RESULTS_DIR="results"
 
 mkdir -p $RESULTS_DIR
