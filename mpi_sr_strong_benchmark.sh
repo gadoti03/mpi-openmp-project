@@ -29,7 +29,7 @@ OUTFILE="$RESULTS_DIR/strong_mpi_results_mode${MODE}.csv"
 echo "Run,P,N,Time" > $OUTFILE
 
 for P in 1 2 4 8 12 16 20 24 48; do
-    for i in {1..3}; do
+    for i in {1..2}; do
         RESULT=$(srun -n $P $EXEC $N_FIXED $MODE)
         echo "$i,$P,$N_FIXED,$RESULT" >> $OUTFILE
     done

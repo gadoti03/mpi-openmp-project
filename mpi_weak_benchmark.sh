@@ -21,7 +21,7 @@ echo "Run,P,N,Time" > $RESULTS_DIR/weak_mpi_results.csv
 for i in "${!TASKS[@]}"; do
     P=${TASKS[$i]}
     N=${SIZES[$i]}
-    for run in {1..3}; do
+    for run in {1..2}; do
         RESULT=$(srun -n $P $EXEC $N)
         echo "$run,$P,$N,$RESULT" >> $RESULTS_DIR/weak_mpi_results.csv
     done

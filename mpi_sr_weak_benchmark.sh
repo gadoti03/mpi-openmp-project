@@ -34,7 +34,7 @@ echo "Run,P,N,Time" > $OUTFILE
 for i in "${!TASKS[@]}"; do
     P=${TASKS[$i]}
     N=${SIZES[$i]}
-    for run in {1..3}; do
+    for run in {1..2}; do
         RESULT=$(srun -n $P $EXEC $N $MODE)
         echo "$run,$P,$N,$RESULT" >> $OUTFILE
     done

@@ -21,7 +21,7 @@ echo "Run,P,N,Time" > $RESULTS_DIR/weak_openMP_results.csv
 for i in "${!TASKS[@]}"; do
     P=${TASKS[$i]}
     N=${SIZES[$i]}
-    for run in {1..3}; do
+    for run in {1..2}; do
         RESULT=$(srun $EXEC $N $P)
         echo "$run,$P,$N,$RESULT" >> $RESULTS_DIR/weak_openMP_results.csv
     done

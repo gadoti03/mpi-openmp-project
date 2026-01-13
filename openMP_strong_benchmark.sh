@@ -16,7 +16,7 @@ mkdir -p $RESULTS_DIR
 echo "Run,P,N,Time" > $RESULTS_DIR/strong_openMP_results.csv
 
 for P in 1 2 4 8 12 16 20 24 48; do
-    for i in {1..3}; do
+    for i in {1..2}; do
         RESULT=$(srun $EXEC $N_FIXED $P)
         echo "$i,$P,$N_FIXED,$RESULT" >> $RESULTS_DIR/strong_openMP_results.csv
     done
