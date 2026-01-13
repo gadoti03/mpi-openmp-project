@@ -30,17 +30,16 @@ int main(int argc, char* argv[]) {
     double * A; // Master matrix
     int * T; // Result matrix
     
-    // Number of rows per process (simplified distribution)
+    // Number of rows per process
     int base_rows = N / size;
     int extra_rows = N % size;
 
-    // It says me how many elements each process will receive
+    // How many elements each process will receive
     int *sendcounts = malloc(size * sizeof(int));
     
-    // It says me the displacement (in elements) from the beginning of A_raw for each process
+    // The displacement from the beginning of A for each process
     int *senddispls = malloc(size * sizeof(int));
 
-    // Master initializes matrix A
     if (my_rank == 0) {
         // Allocate memory for A and T (contiguous allocation)
         A = malloc(N * N * sizeof(double));
@@ -55,7 +54,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        /* Calculation of sendcounts and senddispls */
         int current_displ = 0;
         for (int p = 0; p < size; p++) {
             // distribute extra rows to the first 'extra_rows' processes
@@ -71,10 +69,10 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(sendcounts, size, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(senddispls, size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // the number of rows assigned to this process
+    // Number of rows assigned to this process
     int my_rows = sendcounts[my_rank] / N;
 
-    // local buffers: each process gets its chunk of A and T (only actual rows, no padding)
+    // Local buffers
     double *my_A = NULL;
     int *my_T = NULL;
     
@@ -83,148 +81,137 @@ int main(int argc, char* argv[]) {
         my_T = malloc( sendcounts[my_rank] * sizeof(int));
     }
 
-    /* timing start **************************************/
     MPI_Barrier(MPI_COMM_WORLD);
     start = MPI_Wtime();
-    /* timing start **************************************/
 
-    /* MASTER: DATA DISTRIBUTION */
     MPI_Scatterv(
         A, 
         sendcounts, 
         senddispls, 
-        MPI_DOUBLE,  // send buffers
+        MPI_DOUBLE,
         my_A, 
         sendcounts[my_rank], 
-        MPI_DOUBLE, // recv buffer
+        MPI_DOUBLE,
         0, 
         MPI_COMM_WORLD
     );
 
-    /* 1) neighbor ranks */
+    // Neighbors ranks
     int up   = (my_rank > 0)        ? my_rank - 1 : MPI_PROC_NULL;
     int down = (my_rank < size - 1) ? my_rank + 1 : MPI_PROC_NULL;
-    int total_rows = my_rows + 2; // two ghost rows (above and below)
+    int total_rows = my_rows + 2;
 
-    // the last process that contains data
-    int last_rank_with_data = size - 1;
-    while (last_rank_with_data >= 0 && sendcounts[last_rank_with_data] == 0) {
-        last_rank_with_data--;
-    }
 
-    /* 2) add ghost rows above and below */
-    double *my_A_plus_ghosts = calloc(total_rows * N, sizeof(double));
-    double *upper_ghost = my_A_plus_ghosts;                          // row -1
-    double *local_data  = my_A_plus_ghosts + N;                 // rows [0 ... my_rows-1]
-    double *lower_ghost = my_A_plus_ghosts + (my_rows + 1) * N; // row + my_rows
+    // Add halo rows above and below
+    double *my_A_plus_halos = calloc(total_rows * N, sizeof(double));
+    double *upper_halo = my_A_plus_halos; // row -1
+    double *local_data  = my_A_plus_halos + N; // rows [0 ... my_rows-1]
+    double *lower_halo = my_A_plus_halos + (my_rows + 1) * N; // row + my_rows
 
-    /* copy local block into the central part of the buffer */
+    // Copy local block into the central part of the buffer
     if (my_rows > 0) {
         memcpy(local_data, my_A, my_rows * N * sizeof(double));
     }
 
-    /* 2) Halo exchange rows */
-    if (exchange_mode == 0) {
-        // SSend / Recv version ********************************************************************
+    // Halo exchange rows
+    if (exchange_mode == 0) { // SSend / Recv version 
         if (my_rank > 0 && my_rows > 0) {
             MPI_Ssend(local_data, N, MPI_DOUBLE, up, 100, MPI_COMM_WORLD);
-            MPI_Recv(upper_ghost, N, MPI_DOUBLE, up, 200, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(upper_halo, N, MPI_DOUBLE, up, 200, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         int send_down_offset = (my_rows > 0 ? (my_rows - 1) * N : 0);
     
         if (my_rank < size - 1 && my_rows > 0) {
             if (sendcounts[down] > 0) {
-                MPI_Recv(lower_ghost, N, MPI_DOUBLE, down, 100, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(lower_halo, N, MPI_DOUBLE, down, 100, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 MPI_Ssend(local_data + send_down_offset, N, MPI_DOUBLE, down, 200, MPI_COMM_WORLD);
             }
         }
-    } else if (exchange_mode == 1) { 
-        // Isend / Irecv version ******************************************************************** 
+    } else if (exchange_mode == 1) { // Isend / Irecv version
         MPI_Request requests[4];
         int req_count = 0;
         int send_down_offset = (my_rows > 0 ? (my_rows - 1) * N : 0);
     
-        // receive first, then send (Irecv + Isend)
+        // Receive first
         if (my_rank > 0 && my_rows > 0) {
-            MPI_Irecv(upper_ghost, N, MPI_DOUBLE, up, 200, MPI_COMM_WORLD, &requests[req_count++]);
+            MPI_Irecv(upper_halo, N, MPI_DOUBLE, up, 200, MPI_COMM_WORLD, &requests[req_count++]);
         }
         if (my_rank < size - 1 && my_rows > 0 && sendcounts[down] > 0) {
-            MPI_Irecv(lower_ghost, N, MPI_DOUBLE, down, 100, MPI_COMM_WORLD, &requests[req_count++]);
+            MPI_Irecv(lower_halo, N, MPI_DOUBLE, down, 100, MPI_COMM_WORLD, &requests[req_count++]);
         }
-    
-        // send after
+
+        // Send after
         if (my_rank > 0 && my_rows > 0) {
             MPI_Isend(local_data, N, MPI_DOUBLE, up, 100, MPI_COMM_WORLD, &requests[req_count++]);
         }
         if (my_rank < size - 1 && my_rows > 0 && sendcounts[down] > 0) {
             MPI_Isend(local_data + send_down_offset, N, MPI_DOUBLE, down, 200, MPI_COMM_WORLD, &requests[req_count++]);
         }
-    
-        // wait for all to complete
+
+        // Wait for all to complete
         if (req_count > 0) {
             MPI_Waitall(req_count, requests, MPI_STATUSES_IGNORE);
         }
-    } else if (exchange_mode == 2) {
-        // Sendrecv version ********************************************************************
+    } else if (exchange_mode == 2) { // Sendrecv version
         int send_down_offset = (my_rows > 0 ? (my_rows - 1) * N : 0);
         
-        // Exchange from UP: send my first row, receive the row above me
+        // UP: send my first row, receive the row above me
         MPI_Sendrecv(local_data, N, MPI_DOUBLE, up, 100,
-                    upper_ghost, N, MPI_DOUBLE, up, 200,
+                    upper_halo, N, MPI_DOUBLE, up, 200,
                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         
-        // Exchange from DOWN: send my last row, receive the row below me
+        // DOWN: send my last row, receive the row below me
         MPI_Sendrecv(local_data + send_down_offset, N, MPI_DOUBLE, down, 200,
-                    lower_ghost, N, MPI_DOUBLE, down, 100,
+                    lower_halo, N, MPI_DOUBLE, down, 100,
                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     } 
     
-    /* 3. Parallel processing (each process on its local domain) */
-    for (int i = 0; i < my_rows; i++) { // handles only valid rows
-        for (int j = 0; j < N; j++) {
+    // Computer local sum
+    for (int i = 0; i < my_rows; i++) {
+        for (int j = 0; j < N; j++){ // for each column
 
             // initialize accumulators
             double sum = 0; // sum of the neighborhood values
-            int count = 0;    // number of elements, for the mean
+            int count = 0;  // number of elements, for the mean
 
-            /* 3.1 neighborhood  bounds */
-            // vertical 
-            int zmin = (i == 0 && my_rank == 0) ? 0 : -1; // top boundary
-            int zmax = (i == my_rows - 1 && my_rank == last_rank_with_data) ? 0 : 1; // bottom boundary
+            // Loop over the 3x3 neighborhood
+            for (int di = -1; di <= 1; di++) {
+                int ni = i + di + 1; // +1 to skip the upper halo
 
-            // horizontal
-            int wmin = (j > 0) ? -1 : 0; // left boundary
-            int wmax = (j < N - 1) ? 1 : 0; // right boundary
+                // check MPI halo boundaries
+                if ((i == 0 && my_rank == 0 && di < 0) || 
+                    (i == my_rows - 1 && my_rank == size - 1 && di > 0)) {
+                    continue;
+                }
 
-            /* 3.2 scan the 3x3 neighborhood */
-            for (int dz = zmin; dz <= zmax; dz++) { // vertical offset
-                int rowIndex = i + 1 + dz; // +1 to skip upper ghost
+                for (int dj = -1; dj <= 1; dj++) {
+                    int nj = j + dj;
 
-                for (int dw = wmin; dw <= wmax; dw++) { // horizontal offset
-                    int colIndex = j + dw;
+                    // horizontal boundaries
+                    if (nj < 0 || nj >= N) continue;
 
-                    sum += my_A_plus_ghosts[rowIndex * N + colIndex];
+                    sum += my_A_plus_halos[ni * N + nj];
                     count++;
                 }
             }
 
-            /* 3.5 thresholding operation */
-            my_T[i * N + j] = (local_data[i * N + j] * count > sum) ? 1 : 0;
+
+            my_T[i * N + j] = (local_data[i * N + j] * count > sum) ? 1 : 0; // ottimizzazione
         }
-    }
+    }    
 
-    free(my_A_plus_ghosts);
 
-    /* MASTER: DATA GATHERING */
+    free(my_A_plus_halos);
+
     MPI_Gatherv(
         my_T, 
         my_rows * N, 
-        MPI_INT,      // send buffer
+        MPI_INT,
         T, 
         sendcounts, 
         senddispls, 
-        MPI_INT, // recv buffers
+        MPI_INT,
         0, 
         MPI_COMM_WORLD
     );
