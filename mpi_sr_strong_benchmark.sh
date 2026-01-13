@@ -3,8 +3,10 @@
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=24
-#SBATCH -o strong_scaling.out
+#SBATCH --ntasks-per-node=1 # Run a single task per node
+#SBATCH -c 48 # number of CPU cores i.e. OpenMP threads per task
+#SBATCH -o job.out
+#SBATCH -e job.err
 
 EXEC="./bin/binarize_sr_mpi"
 N_FIXED=10000
@@ -27,7 +29,7 @@ OUTFILE="$RESULTS_DIR/strong_mpi_results_mode${MODE}.csv"
 # intestazione CSV
 echo "Run,P,N,Time" > $OUTFILE
 
-for P in 1 2 4 8 12 16 20 24; do
+for P in 1 2 4 8 12 16 20 24 48; do
     for i in {1..3}; do
         RESULT=$(srun -n $P $EXEC $N_FIXED $MODE)
         echo "$i,$P,$N_FIXED,$RESULT" >> $OUTFILE

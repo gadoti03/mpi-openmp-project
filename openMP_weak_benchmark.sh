@@ -4,7 +4,7 @@
 #SBATCH -t 00:20:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1 # Run a single task per node
-#SBATCH -c 24 # number of CPU cores i.e. OpenMP threads per task
+#SBATCH -c 48 # number of CPU cores i.e. OpenMP threads per task
 #SBATCH -o job.out
 #SBATCH -e job.err
 
@@ -13,9 +13,9 @@ RESULTS_DIR="results"
 
 mkdir -p $RESULTS_DIR
 
-TASKS=(1     2     4     8     12    16    20    24)
+TASKS=(1     2     4     8     12    16    20    24   48)
 # SIZES=(2000 2828 4000 5656 6928 8000 8944 9798)
-SIZES=(5000 7071 10000 14142 17320 20000 22360 24494)
+SIZES=(5000 7070 10000 14144 17316 20000 22360 24480 34608)
 
 echo "Run,P,N,Time" > $RESULTS_DIR/weak_openMP_results.csv
 
