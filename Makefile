@@ -36,11 +36,6 @@ all: build venv plot
 # =================== BUILD ===================
 build: modules $(MPI_BIN) $(MPI_SR_BIN) $(OMP_BIN)
 
-.PHONY: modules
-modules:
-	module purge
-	module load openmpi/4.1.6--gcc--12.2.0
-
 $(MPI_SR_BIN): $(MPI_SR_SRC)
 	mkdir -p $(BIN_DIR)
 	mpicc -O3 -o $@ $<
