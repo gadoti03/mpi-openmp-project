@@ -12,19 +12,24 @@ RESULTS_DIR="results"
 
 mkdir -p $RESULTS_DIR
 
-MODES=(0 1 2)  # exchange_mode: SSend/Recv, Isend/Irecv, Sendrecv
+# ------------------------------------------------------------
+# Prendi il mode come argomento
+if [ -z "$1" ]; then
+    echo "Uso: $0 <mode>"
+    echo "mode: 0=Ssend/Recv, 1=Isend/Irecv, 2=Sendrecv"
+    exit 1
+fi
+MODE=$1
+# ------------------------------------------------------------
 
-for mode in "${MODES[@]}"; do
-    OUTFILE="$RESULTS_DIR/strong_mpi_results_mode${mode}.csv"
+OUTFILE="$RESULTS_DIR/strong_mpi_results_mode${MODE}.csv"
 
-    # intestazione CSV
-    echo "Run,P,N,Time" > $OUTFILE
+# intestazione CSV
+echo "Run,P,N,Time" > $OUTFILE
 
-    for P in 1 2 4 8 12 16 20 24; do
-        for i in {1..3}; do
-            RESULT=$(srun -n $P $EXEC $N_FIXED $mode)
-            # RESULT=$(srun -n $P $EXEC $N_FIXED $mode)
-            echo "$i,$P,$N_FIXED,$RESULT" >> $OUTFILE
-        done
+for P in 1 2 4 8 12 16 20 24; do
+    for i in {1..3}; do
+        RESULT=$(srun -n $P $EXEC $N_FIXED $MODE)
+        echo "$i,$P,$N_FIXED,$RESULT" >> $OUTFILE
     done
 done

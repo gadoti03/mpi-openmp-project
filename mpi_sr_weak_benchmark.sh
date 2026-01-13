@@ -15,20 +15,26 @@ TASKS=(1     2     4     8     12    16    20    24)
 # SIZES=(2000 2828 4000 5656 6928 8000 8944 9798)
 SIZES=(5000 7071 10000 14142 17320 20000 22360 24494)
 
-MODES=(0 1 2)   # exchange_mode: SSend/Recv, Isend/Irecv, Sendrecv
+# ------------------------------------------------------------
+# Prendi il mode come argomento
+if [ -z "$1" ]; then
+    echo "Uso: $0 <mode>"
+    echo "mode: 0=Ssend/Recv, 1=Isend/Irecv, 2=Sendrecv"
+    exit 1
+fi
+MODE=$1
+# ------------------------------------------------------------
 
-for mode in "${MODES[@]}"; do
-    OUTFILE="$RESULTS_DIR/weak_mpi_results_mode${mode}.csv"
-    
-    # intestazione CSV
-    echo "Run,P,N,Time" > $OUTFILE
+OUTFILE="$RESULTS_DIR/weak_mpi_results_mode${MODE}.csv"
 
-    for i in "${!TASKS[@]}"; do
-        P=${TASKS[$i]}
-        N=${SIZES[$i]}
-        for run in {1..3}; do
-            RESULT=$(srun -n $P $EXEC $N $mode)
-            echo "$run,$P,$N,$RESULT" >> $OUTFILE
-        done
+# intestazione CSV
+echo "Run,P,N,Time" > $OUTFILE
+
+for i in "${!TASKS[@]}"; do
+    P=${TASKS[$i]}
+    N=${SIZES[$i]}
+    for run in {1..3}; do
+        RESULT=$(srun -n $P $EXEC $N $MODE)
+        echo "$run,$P,$N,$RESULT" >> $OUTFILE
     done
 done
