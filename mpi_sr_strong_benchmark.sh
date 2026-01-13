@@ -3,10 +3,8 @@
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1 # Run a single task per node
-#SBATCH -c 48 # number of CPU cores i.e. OpenMP threads per task
-#SBATCH -o job.out
-#SBATCH -e job.err
+#SBATCH --ntasks=48
+#SBATCH -o strong_scaling.out
 
 EXEC="./bin/binarize_sr_mpi"
 N_FIXED=10000

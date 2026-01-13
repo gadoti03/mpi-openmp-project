@@ -1,148 +1,111 @@
-# MPI & OpenMP Benchmark Project
+# HPC Matrix Binarization
 
-This project provides a framework to **compile, run, and plot benchmarks** for MPI and OpenMP implementations. The workflow is fully managed through a `Makefile`, making it easy to reproduce results and generate plots from benchmark data.
+This project performs **matrix binarization** on an HPC system using **MPI** and **OpenMP**. The workflow supports testing the program on multiple process counts across different nodes.
 
----
+## Supported Process Counts
 
-## Table of Contents
+The program can be executed with the following number of processes:
 
-1. [Requirements](#requirements)
-2. [Setup](#setup)
-3. [Build](#build)
-4. [Run Benchmarks](#run-benchmarks)
-5. [Generate Plots](#generate-plots)
-6. [Full Pipeline](#full-pipeline)
-7. [Clean](#clean)
-8. [Project Structure](#project-structure)
-9. [Outputs](#outputs)
-
----
+```
+1, 2, 4, 8, 12, 16, 20, 24, 48
+```
 
 ## Requirements
 
-* **C compiler**: `gcc` for OpenMP
-* **MPI compiler**: `mpicc` for MPI
-* **SLURM** for submitting benchmark jobs (`sbatch`)
-* **Python 3** with packages:
-
-  * `numpy`
-  * `pandas`
-  * `matplotlib`
+* Python 3.x
+* MPI (e.g., OpenMPI or MPICH)
+* OpenMP support in your compiler
+* `requirements.txt` for Python dependencies
 
 ---
 
 ## Setup
 
-### 1. Create a Python virtual environment (recommended)
+1. **Create Python virtual environment:**
 
 ```bash
-python3 -m venv venv
+make venv
 ```
 
-Activate it:
-
-* On Linux/macOS:
+2. **Activate the virtual environment:**
 
 ```bash
 source venv/bin/activate
 ```
 
-* On Windows (PowerShell):
-
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-### 2. Install Python dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-This is required for generating plots.
-
 ---
 
-## Build
+## Usage
 
-Compile the MPI and OpenMP executables:
-
-```bash
-make build
-```
-
-This generates:
-
-* `bin/binarize_mpi`
-* `bin/binarize_openMP`
-
----
-
-## Run Benchmarks
-
-Submit strong and weak scaling benchmarks for both MPI and OpenMP using SLURM:
+### Generate CSVs (run binarization only)
 
 ```bash
 make run
 ```
 
-* The Makefile submits jobs asynchronously.
-* Each job script generates a `.csv` file in `results/`.
+This will execute the program for all specified process counts and save the output CSVs in `results/csv/`.
 
----
-
-## Generate Plots
-
-After benchmark results are available, generate plots:
-
-```bash
-make plots
-```
-
-This runs `plot.py` on the CSV results for both MPI and OpenMP.
-
----
-
-## Full Pipeline
-
-To execute the full workflow (build + venv + run + plot):
+### Generate CSVs + Plots
 
 ```bash
 make
 ```
 
----
+This will execute the program and also generate plots from the CSV results, saved in `results/plots/`.
 
-## Clean
-
-Remove binaries and benchmark results:
+### Clean CSVs and Executables
 
 ```bash
 make clean
 ```
 
----
+Removes all generated CSV files and executable binaries.
 
-## Project Structure
+### Clean Everything (CSV, Executables, Plots)
 
-```
-bin/                # Compiled binaries
-scripts/            # Source code for MPI/OpenMP
-results/            # Benchmark CSV output
-output/             # Generated plots
-plot.py             # Python script for generating plots
-Makefile            # Workflow automation
-requirements.txt    # Python dependencies
-README.md           # Project documentation
+```bash
+make cleanall
 ```
 
----
-
-## Outputs
-
-* **Benchmark results**: `results/*.csv`
-* **Generated plots**: `output/` (created by the plotting script)
+Removes all CSVs, executables, and plots.
 
 ---
 
-Enjoy benchmarking and analyzing performance!
+## Sending Results to a Server
+
+A batch script `send_file.sh` can be used to send results to a remote server using `scp`.
+
+Example usage:
+
+```bash
+./send_file.sh
+```
+
+Make sure to edit the script to set your server address and remote directory. Activate your Python virtual environment before sending the files.
+
+---
+
+## Directory Structure
+
+```
+project_root/
+│
+├─ bin/                  # Compiled binaries
+├─ scripts/              # Python scripts for plotting or processing
+├─ results/
+│  ├─ csv/               # CSV outputs from runs
+│  └─ plots/             # Generated plots
+├─ venv/                 # Python virtual environment
+├─ Makefile
+├─ send_file.sh
+└─ README.md
+```
+
+---
+
+## Notes
+
+* The Makefile is configured to run all specified process counts sequentially.
+* Modify the `PROCS` variable in the Makefile if you want to test different process counts.
+* Plots are generated using the Python script `scripts/plot_results.py`, which expects CSVs in `results/csv/`.
+* Ensure MPI and OpenMP are correctly installed on your HPC system.
