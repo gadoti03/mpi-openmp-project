@@ -58,34 +58,34 @@ mpi_sr: build $(MPI_STRONG_RES_MODE0) $(MPI_WEAK_RES_MODE0) $(MPI_STRONG_RES_MOD
 openmp: build $(OMP_STRONG_RES) $(OMP_WEAK_RES)
 
 $(MPI_STRONG_RES):
-	sbatch $(MPI_STRONG_JOB)
+	sbatch --wait $(MPI_STRONG_JOB)
 
 $(MPI_WEAK_RES):
-	sbatch $(MPI_WEAK_JOB)
+	sbatch --wait $(MPI_WEAK_JOB)
 
 $(MPI_STRONG_RES_MODE0):
-	sbatch $(MPI_STRONG_SR_JOB) 0
+	sbatch --wait $(MPI_STRONG_SR_JOB) 0
 
 $(MPI_STRONG_RES_MODE1):
-	sbatch $(MPI_STRONG_SR_JOB) 1
+	sbatch --wait $(MPI_STRONG_SR_JOB) 1
 
 $(MPI_STRONG_RES_MODE2):
-	sbatch $(MPI_STRONG_SR_JOB) 2
+	sbatch --wait $(MPI_STRONG_SR_JOB) 2
 
 $(MPI_WEAK_RES_MODE0):
-	sbatch $(MPI_WEAK_SR_JOB) 0
+	sbatch --wait $(MPI_WEAK_SR_JOB) 0
 
 $(MPI_WEAK_RES_MODE1):
-	sbatch $(MPI_WEAK_SR_JOB) 1
+	sbatch --wait $(MPI_WEAK_SR_JOB) 1
 
 $(MPI_WEAK_RES_MODE2):
-	sbatch $(MPI_WEAK_SR_JOB) 2
+	sbatch --wait $(MPI_WEAK_SR_JOB) 2
 
 $(OMP_STRONG_RES):
-	sbatch $(OMP_STRONG_JOB)
+	sbatch --wait $(OMP_STRONG_JOB)
 
 $(OMP_WEAK_RES):
-	sbatch $(OMP_WEAK_JOB)
+	sbatch --wait $(OMP_WEAK_JOB)
 
 # =================== PLOT ====================
 plot: plot_mpi plot_mpi_sr_mode0 plot_mpi_sr_mode1 plot_mpi_sr_mode2 plot_openmp plot_mpi_groups
