@@ -3,7 +3,7 @@
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=48
+#SBATCH --ntasks=48
 #SBATCH -o job.out
 #SBATCH -e job.err
 
