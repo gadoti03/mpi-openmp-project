@@ -3,12 +3,13 @@
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=48
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=48
 #SBATCH -o job.out
 #SBATCH -e job.err
 
 EXEC="./bin/binarize_openMP"
-N_FIXED=50
+N_FIXED=10000
 RESULTS_DIR="results"
 
 mkdir -p $RESULTS_DIR
