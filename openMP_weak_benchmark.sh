@@ -1,10 +1,8 @@
-#!/bin/bash
 #SBATCH --account=tra25_IngInfBo
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=48
+#SBATCH -c 48
 #SBATCH -o job.out
 #SBATCH -e job.err
 
@@ -23,6 +21,7 @@ for i in "${!TASKS[@]}"; do
     P=${TASKS[$i]}
     N=${SIZES[$i]}
     for run in {1..2}; do
+        export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
         RESULT=$(srun $EXEC $N $P)
         echo "$run,$P,$N,$RESULT" >> $RESULTS_DIR/weak_openMP_results.csv
     done

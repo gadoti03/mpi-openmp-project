@@ -30,19 +30,24 @@ int main(int argc, char* argv[]) {
             T[i*N + j] = 0;
         }
 
+    // dichiarazione prima del for (non inizializzare!)
+    int j, di, dj, ni, nj;
+    double sum;
+    int count;
+
     double start = omp_get_wtime();
 
-    #pragma omp parallel for schedule(static) num_threads(P)
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            double sum = 0.0;
-            int count = 0;
+    #pragma omp parallel for schedule(static) num_threads(P) \
+        private(j, sum, count, di, dj, ni, nj) shared(A, T, N)
+    for(int i = 0; i < N; i++){
+        for(j = 0; j < N; j++){
+            sum = 0.0;   // inizializzazione per ogni cella
+            count = 0;
 
-            // Loop over neighbors
-            for(int di=-1;di<=1;di++){
-                for(int dj=-1;dj<=1;dj++){
-                    int ni = i + di;
-                    int nj = j + dj;
+            for(di = -1; di <= 1; di++){
+                for(dj = -1; dj <= 1; dj++){
+                    ni = i + di;
+                    nj = j + dj;
                     if(ni >= 0 && ni < N && nj >= 0 && nj < N){
                         sum += A[ni*N + nj];
                         count++;

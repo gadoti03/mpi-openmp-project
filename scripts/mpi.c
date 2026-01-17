@@ -103,6 +103,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Set first_row and last_row for local computation
+    first_row = 1; // Discard upper halo
+    last_row = my_sendcount/N - 2; // Discard last row of halo
+    if (my_rank == 0) {
+        first_row = 0; // First row without upper halo
+    } else if (my_rank == size - 1) {
+        last_row = my_sendcount/N - 1; // Last row without lower halo
+    }
+
     MPI_Barrier(MPI_COMM_WORLD);
     start = MPI_Wtime();
 
@@ -130,15 +139,6 @@ int main(int argc, char* argv[]) {
             0, 
             MPI_COMM_WORLD
         );
-    }
-
-    // Set first_row and last_row for local computation
-    first_row = 1; // Discard upper halo
-    last_row = my_sendcount/N - 2; // Discard last row of halo
-    if (my_rank == 0) {
-        first_row = 0; // First row without upper halo
-    } else if (my_rank == size - 1) {
-        last_row = my_sendcount/N - 1; // Last row without lower halo
     }
 
     // Computer local sum
