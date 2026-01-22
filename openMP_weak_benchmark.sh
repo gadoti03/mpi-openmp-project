@@ -1,3 +1,4 @@
+#!/bin/bash
 #SBATCH --account=tra25_IngInfBo
 #SBATCH --partition=g100_usr_prod
 #SBATCH -t 00:20:00

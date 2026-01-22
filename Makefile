@@ -34,7 +34,7 @@ OMP_WEAK_RES   = $(RESULTS_DIR)/weak_openMP_results.csv
 all: build venv plot
 
 # =================== BUILD ===================
-build: modules $(MPI_BIN) $(MPI_SR_BIN) $(OMP_BIN)
+build: $(MPI_BIN) $(MPI_SR_BIN) $(OMP_BIN)
 
 $(MPI_SR_BIN): $(MPI_SR_SRC)
 	mkdir -p $(BIN_DIR)
