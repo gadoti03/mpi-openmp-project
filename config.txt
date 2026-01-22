@@ -1,7 +1,0 @@
-# load modules
-source /etc/profile.d/modules.sh
-module purge
-module load openmpi/4.1.6--gcc--12.2.0
-
-# verify status jobs
-sacct -u $USER | grep -v COMPLETED
