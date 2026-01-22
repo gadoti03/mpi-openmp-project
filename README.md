@@ -43,7 +43,7 @@ source venv/bin/activate
 make run
 ```
 
-This will execute the program for all specified process counts and save the output CSVs in `results/csv/`.
+This will execute the program for all specified process counts and save the output CSVs in `results`.
 
 ### Generate CSVs + Plots
 
@@ -71,34 +71,33 @@ Removes all CSVs, executables, and plots.
 
 ---
 
-## Sending Results to a Server
-
-A batch script `send_file.sh` can be used to send results to a remote server using `scp`.
-
-Example usage:
-
-```bash
-./send_file.sh
-```
-
-Make sure to edit the script to set your server address and remote directory. Activate your Python virtual environment before sending the files.
-
----
-
 ## Directory Structure
 
 ```
 project_root/
-│
-├─ bin/                  # Compiled binaries
-├─ scripts/              # Python scripts for plotting or processing
-├─ results/
-│  ├─ csv/               # CSV outputs from runs
-│  └─ plots/             # Generated plots
-├─ venv/                 # Python virtual environment
-├─ Makefile
-├─ send_file.sh
-└─ README.md
+├── bin
+│   ├── binarize_mpi
+│   └── binarize_openMP
+├── config.txt
+├── Makefile
+├── mpi_sr_strong_benchmark.sh
+├── mpi_sr_weak_benchmark.sh
+├── mpi_strong_benchmark.sh
+├── mpi_weak_benchmark.sh
+├── openMP_strong_benchmark.sh
+├── openMP_weak_benchmark.sh
+├── output
+├── plot_comparison.py
+├── plot.py
+├── presentation.pdf
+├── README.md
+├── requirements.txt
+├── results
+├── scripts
+│   ├── mpi.c
+│   ├── mpi_sr.c
+│   ├── openMP.c
+│   └── serial.c
 ```
 
 ---
@@ -106,6 +105,5 @@ project_root/
 ## Notes
 
 * The Makefile is configured to run all specified process counts sequentially.
-* Modify the `PROCS` variable in the Makefile if you want to test different process counts.
-* Plots are generated using the Python script `scripts/plot_results.py`, which expects CSVs in `results/csv/`.
+* Plots are generated using the Python script `scripts/plot.py` and `scripts/plot_comparison.py`, which expects CSVs in `results/`.
 * Ensure MPI and OpenMP are correctly installed on your HPC system.
