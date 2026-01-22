@@ -5,3 +5,4 @@ results/
 output/
 .Makefile.swp
 config.txt
+send_file.sh
